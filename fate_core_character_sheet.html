@@ -387,73 +387,7 @@
     </form>
   </dialog>
 
-  <!-- JSON Schema (Draft-07) embedded -->
-  <script id="jsonSchema" type="application/json">{
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "$id": "https://example.com/fate-character.schema.json",
-    "title": "FateCoreCharacter",
-    "type": "object",
-    "required": ["schemaVersion","name","highConcept","trouble","description","background","skills","stunts","extras","aspects","stress","consequences","refresh","fatePoints"],
-    "properties": {
-      "schemaVersion": {"type":"string","const":"1.1.0"},
-      "name": {"type":"string","minLength":1},
-      "highConcept": {"type":"string"},
-      "trouble": {"type":"string"},
-      "description": {"type":"string"},
-      "background": {"type":"string"},
-      "image": {
-        "type":"string",
-        "description":"URL (http/https/file) or data URI. If absent, consumer should use default.",
-        "anyOf":[
-          {"format":"uri"},
-          {"pattern":"^data:image/"}
-        ]
-      },
-      "refresh": {"type":"integer","minimum":0},
-      "fatePoints": {"type":"integer","minimum":0},
-      "pyramidConfig": {
-        "type":"object",
-        "properties": {
-          "minRating": {"type":"integer","minimum":0},
-          "tierCaps": {
-            "type":"array",
-            "items":{"type":"object","properties":{"rating":{"type":"integer"},"maxCount":{"type":"integer","minimum":0}},"required":["rating","maxCount"]}
-          }
-        },
-        "required":["minRating"]
-      },
-      "skills": {
-        "type":"array",
-        "items": {"type":"object","properties":{"name":{"type":"string"},"rating":{"type":"integer"}},"required":["name","rating"]}
-      },
-      "skillLevels": {"type":"array","items":{"type":"integer"}},
-      "aspects": {"type":"array","items":{"type":"string"}},
-      "stunts": {"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}},
-      "extras": {"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}},
-      "stress": {
-        "type":"object",
-        "required":["physical","mental"],
-        "properties":{
-          "physical":{"type":"array","items":{"type":"boolean"}},
-          "mental":{"type":"array","items":{"type":"boolean"}}
-        }
-      },
-      "stressConfig": {
-        "type":"object",
-        "properties":{
-          "physicalBoxes":{"type":"integer","minimum":0},
-          "mentalBoxes":{"type":"integer","minimum":0}
-        },
-        "required":["physicalBoxes","mentalBoxes"]
-      },
-      "consequences": {
-        "type":"array",
-        "items": {"type":"object","properties":{"severity":{"type":"string","enum":["Mild","Moderate","Severe","Extreme"]},"text":{"type":"string"}},"required":["severity","text"]}
-      }
-    }
-  }
-  </script>
-
+  
   <!-- html2pdf (via CDN) -->
   <script>
     // Lazy-load html2pdf to keep first paint quick
@@ -1746,40 +1680,5 @@
 
     })();
   </script>
-
-  <!-- Notes: For full PWA, place these two tiny files next to this HTML when hosting over HTTPS or localhost. -->
-  <!-- manifest.webmanifest -->
-  <!--
-  {
-    "name": "Fate Core Character Sheet",
-    "short_name": "Fate Sheet",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#0b1020",
-    "theme_color": "#2563eb",
-    "icons": [
-      {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
-      {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
-    ]
-  }
-  -->
-
-  <!-- sw.js (basic cache-first for this page and CDN lib) -->
-  <!--
-  const CACHE='fate-sheet-v1';
-  const ASSETS=[
-    './',
-    './index.html',
-    'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
-  ];
-  self.addEventListener('install',e=>{
-    e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
-  });
-  self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
-  self.addEventListener('fetch',e=>{
-    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-  });
-  -->
-
 </body>
 </html>

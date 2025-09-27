@@ -2,6 +2,7 @@
   const ASSETS=[
     './',
     './index.html',
+    './fate_character_sheet_schema.json',
     'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
   ];
   self.addEventListener('install',e=>{

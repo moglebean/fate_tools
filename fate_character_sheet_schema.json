@@ -1,0 +1,223 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/fate-character.schema.json",
+  "title": "FateCoreCharacter",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "name",
+    "highConcept",
+    "trouble",
+    "description",
+    "background",
+    "skills",
+    "stunts",
+    "extras",
+    "aspects",
+    "stress",
+    "consequences",
+    "refresh",
+    "fatePoints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.1.0"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "highConcept": {
+      "type": "string"
+    },
+    "trouble": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "background": {
+      "type": "string"
+    },
+    "image": {
+      "type": "string",
+      "description": "URL (http/https/file) or data URI. If absent, consumer should use default.",
+      "anyOf": [
+        {
+          "format": "uri"
+        },
+        {
+          "pattern": "^data:image/"
+        }
+      ]
+    },
+    "refresh": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fatePoints": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pyramidConfig": {
+      "type": "object",
+      "properties": {
+        "minRating": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tierCaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rating": {
+                "type": "integer"
+              },
+              "maxCount": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "rating",
+              "maxCount"
+            ]
+          }
+        }
+      },
+      "required": [
+        "minRating"
+      ]
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "rating"
+        ]
+      }
+    },
+    "skillLevels": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "aspects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stunts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ]
+      }
+    },
+    "extras": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "text"
+        ]
+      }
+    },
+    "stress": {
+      "type": "object",
+      "required": [
+        "physical",
+        "mental"
+      ],
+      "properties": {
+        "physical": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "mental": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "stressConfig": {
+      "type": "object",
+      "properties": {
+        "physicalBoxes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mentalBoxes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "physicalBoxes",
+        "mentalBoxes"
+      ]
+    },
+    "consequences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Mild",
+              "Moderate",
+              "Severe",
+              "Extreme"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "severity",
+          "text"
+        ]
+      }
+    }
+  }
+}
