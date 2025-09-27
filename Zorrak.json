@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.1.0",
+  "name": "Zorrak the Almost-Dragon",
+  "highConcept": "Scaly Warrior Who Believes He’s Actually a Dragon",
+  "trouble": "Rawr Means Everything",
+  "description": "Dragonborn Fighter",
+  "background": "Zorrak was hatched under the blazing red sun of the Ashen Wastes, a time and place his clan took as an omen of great destiny. From a young age, he was convinced he was more dragon than dragonborn — a mighty creature born in a mortal shell. His youth was filled with collecting shiny rocks and scorched scraps of parchment, convinced they were “treasures of his kind.”\n\nAs he grew older, Zorrak wandered far from his tribe in search of his “true dragonhood.” While his battle skills are undeniable, he has a tendency to roar dramatically in every confrontation, attempt to sleep on coins he can’t afford, and demand peasants treat him like royalty. Most people aren’t sure whether he’s a terrifying warrior or an eccentric madman — often both.",
+  "image": null,
+  "refresh": 3,
+  "fatePoints": 0,
+  "pyramidConfig": {
+    "minRating": 0,
+    "tierCaps": []
+  },
+  "skills": [
+    { "name": "Fight", "rating": 4 },
+    { "name": "Physique", "rating": 3 },
+    { "name": "Provoke", "rating": 3 },
+    { "name": "Athletics", "rating": 2 },
+    { "name": "Will", "rating": 2 },
+    { "name": "Notice", "rating": 2 },
+    { "name": "Lore", "rating": 1 },
+    { "name": "Rapport", "rating": 1 },
+    { "name": "Crafts", "rating": 1 },
+    { "name": "Resources", "rating": 1 }
+  ],
+  "skillLevels": [1, 2, 3, 4],
+  "aspects": [
+    "Coin Hoarder Without a Hoard",
+    "Honor-Bound to “Draconic Traditions” (Most of Which He Made Up)"
+  ],
+  "stunts": [
+    {
+      "title": "Fearsome Roar",
+      "text": "Once per scene, spend a Fate Point to use Provoke in place of Fight when making an attack, as long as the attack is intimidation-based."
+    },
+    {
+      "title": "Scaled Warrior",
+      "text": "Gain +2 to Physique when defending against physical harm (weapons, fists, claws, etc.)."
+    }
+  ],
+  "extras": [],
+  "stress": {
+    "physical": [false, false, false],
+    "mental": [false, false]
+  },
+  "stressConfig": {
+    "physicalBoxes": 3,
+    "mentalBoxes": 2
+  },
+  "consequences": [
+    { "severity": "Mild", "text": "" },
+    { "severity": "Moderate", "text": "" },
+    { "severity": "Severe", "text": "" }
+  ]
+}

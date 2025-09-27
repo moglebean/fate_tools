@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fate Core Character Sheet</title>
+  <meta name="description" content="Interactive Fate Core character sheet with JSON save/load, PDF & Markdown export, autosave, and PWA support." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Ccircle cx='64' cy='64' r='62' fill='%231e3a8a'/%3E%3Ctext x='50%25' y='58%25' text-anchor='middle' font-size='64' dy='.35em' fill='white'%3EF%3C/text%3E%3C/svg%3E"/>
+  <!-- Light/Dark theme variables -->
+  <style>
+    :root{
+      --bg: #0b1020; /* dark */
+      --panel: #0f172a;
+      --text: #e5e7eb;
+      --muted:#94a3b8;
+      --accent:#60a5fa;
+      --accent-2:#22d3ee;
+      --border:#1f2937;
+      --good:#10b981;--bad:#ef4444;--warn:#f59e0b;
+    }
+    :root.light{
+      --bg:#f8fafc;--panel:#ffffff;--text:#0f172a;--muted:#475569;--accent:#2563eb;--accent-2:#0891b2;--border:#e2e8f0;--good:#059669;--bad:#dc2626;--warn:#d97706;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;}
+    a{color:var(--accent)}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+
+    /* Header */
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:white;font-weight:900}
+    .title h1{margin:0;font-size:22px}
+    .logo img {max-width: 100%;max-height: 100%;}
+
+    /* Toolbar */
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    button, .btn{appearance:none;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;transition:transform .04s ease, background .2s, border-color .2s}
+    button:hover{transform:translateY(-1px);border-color:var(--accent)}
+    button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:0;color:#fff}
+    .badge{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--border);background:var(--panel);padding:4px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .status-dot{width:8px;height:8px;border-radius:50%}
+
+    /* Menu */
+    .menu-wrap{position:relative}
+    #btn-menu{min-width:80px}
+    .menu{position:absolute;top:110%;right:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:6px;display:none;z-index:10}
+    .menu.open{display:block}
+    .menu button{display:block;width:100%;text-align:left;border-radius:10px;margin:2px 0}
+
+    /* Layout */
+    .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+    .card h2{margin:0 0 12px 0;font-size:18px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}
+    .row>.col-6{grid-column:span 6}
+    .row>.col-4{grid-column:span 4}
+    .row>.col-3{grid-column:span 3}
+    .row>.col-12{grid-column:span 12}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type="text"], input[type="number"], textarea, select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text)}
+    select option, select optgroup{background:var(--panel);color:var(--text)}
+    textarea{min-height:72px;resize:vertical}
+
+    /* Tables */
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    th{font-size:12px;color:var(--muted);text-align:left}
+    td{background:rgba(255,255,255,.02);border:1px solid var(--border);padding:10px;border-radius:10px}
+
+        /* Image */
+    .image-card{display:flex;flex-direction:column;flex:1}
+    .image-card img{width:100%;max-width:320px;height:auto;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#0b1225;display:block;margin:0 auto}
+    .image-inline-btn{display:flex;justify-content:flex-end}
+
+    /* Stress & Consequences */
+    .stress-track{display:flex;gap:6px;flex-wrap:wrap}
+    .stress-box{display:inline-grid;place-items:center;width:30px;height:30px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.03);cursor:pointer;font-weight:700}
+    .stress-box.checked{background:linear-gradient(135deg,var(--accent) 0%, var(--accent-2) 100%);color:white;border-color:transparent}
+
+    /* Skills */
+    .skill-level{display:grid;grid-template-columns:26px 70px 1fr 34px;align-items:start;gap:12px;margin-bottom:12px}
+    .skill-level-delete{display:flex;align-items:center;justify-content:center}
+    .skill-level-placeholder{width:26px;height:26px}
+    .skill-level-label{display:flex;align-items:center;font-weight:700;font-size:14px;min-width:42px}
+    .skill-chip-list{display:flex;flex-wrap:wrap;gap:6px}
+    .skill-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;background:rgba(100,116,139,.18);border:1px solid var(--border);font-size:13px;cursor:grab;user-select:none}
+    .skill-chip-label{display:inline-block;white-space:nowrap}
+    .skill-chip.is-empty{border-style:dashed;background:transparent;color:var(--muted)}
+    .skill-chip-label.is-empty{font-style:italic;color:var(--muted)}
+    .chip-remove{border:none;background:none;color:var(--muted);padding:0;width:20px;height:20px;border-radius:999px;display:grid;place-items:center;cursor:pointer;font-size:14px}
+    .chip-remove:hover{color:var(--bad);background:rgba(255,255,255,.08);transform:none}
+    .skill-chip.dragging{opacity:.6}
+    .skill-chip-list.drag-over{outline:1px dashed var(--accent);outline-offset:4px}
+    .skill-level.drag-over{outline:1px dashed var(--accent);outline-offset:6px}
+    :root.light .skill-chip{background:rgba(148,163,184,.22)}
+
+    /* Aspects */
+    .aspect-item{margin-bottom:8px}
+    .aspect-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+    .aspect-row input[type="text"]{flex:1}
+    #aspects-list{margin-top:8px}
+    #stunts-list,#extras-list,#consq-list{margin-top:8px}
+
+    /* Card controls */
+    .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .card-head h2{margin:0;font-size:18px}
+    .card-head-controls{display:flex;gap:8px;align-items:center}
+    .fab-button{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer;box-shadow:0 3px 8px rgba(15,23,42,.35);transition:transform .08s ease, box-shadow .12s ease, background .2s ease;font-weight:600;line-height:1}
+    .fab-button:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(15,23,42,.35)}
+    .fab-button:focus{outline:2px solid var(--accent);outline-offset:2px}
+    .fab-button.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:0;color:#fff}
+    .fab-button.danger{background:var(--bad);border:0;color:#fff}
+    .fab-button.ghost{background:var(--panel);color:var(--muted)}
+    .fab-button.trash{background:rgba(148,163,184,.18);border:1px solid var(--border);color:var(--muted)}
+    .fab-button.trash:hover{color:var(--bad);background:rgba(148,163,184,.28)}
+    .fab-button.xs{display:flex;align-items:center;justify-content:center;width:26px;height:26px;font-size:15px;box-shadow:0 2px 5px rgba(15,23,42,.3)}
+    .fab-button.xs:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(15,23,42,.3)}
+    :root.light .fab-button{box-shadow:0 3px 8px rgba(148,163,184,.35)}
+
+    .header-controls{display:flex;align-items:center;justify-content:flex-end;gap:16px;flex-wrap:wrap}
+    .character-summary{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+    .character-summary-name{font-weight:600;font-size:14px}
+    .character-summary-meta{font-size:12px;color:var(--muted)}
+    #characterPickerSelect{min-width:220px}
+
+    /* Stress layout */
+    .stress-group{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+    .stress-line{display:flex;align-items:center;gap:12px;flex-wrap:nowrap}
+    .stress-label{font-size:13px;color:var(--muted);min-width:120px;white-space:nowrap}
+    .stress-line .stress-track{flex:1;min-width:0;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+    .stress-actions{display:flex;gap:8px;margin-left:auto;flex-shrink:0}
+
+    /* Consequences */
+    .consequence-row{display:grid;grid-template-columns:26px 120px 1fr;align-items:center;gap:10px;margin-bottom:8px}
+    .consequence-level{font-weight:700;font-size:14px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+    .consequence-row input{flex:1}
+
+    /* Dialog */
+    .modal-backdrop{position:fixed;inset:0;padding:20px;background:rgba(15,23,42,.65);display:grid;place-items:center;z-index:200}
+    .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(calc(100vw - 40px),1100px);max-width:calc(100% - 40px);max-height:calc(100vh - 80px);overflow:auto;box-shadow:0 20px 40px rgba(0,0,0,.45)}
+    .modal h3{margin:0 0 12px 0;font-size:16px;color:var(--text)}
+    .modal form{display:grid;gap:12px}
+    .modal label{font-size:13px;color:var(--muted);margin-bottom:4px}
+    .modal select,.modal input[type="text"]{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--text)}
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+    dialog{border:0;padding:0;background:transparent}
+    dialog::backdrop{background:rgba(15,23,42,.65)}
+    dialog[open]{display:flex;justify-content:center;align-items:flex-start;padding-top:40px}
+    dialog[open] .modal{margin:0}
+
+    /* Dice */
+    .dice-area{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .die{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;font-weight:900;font-size:18px;background:rgba(255,255,255,.03)}
+    .die.plus{outline:2px solid var(--good)}
+    .die.minus{outline:2px solid var(--bad)}
+
+    /* Footer */
+    footer{margin-top:20px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+
+    /* PDF export helpers */
+    .no-pdf{display:initial}
+    .pdf-export .no-pdf{display:none !important}
+
+    /* Print styles (for browser print; html2pdf uses canvas) */
+    @media print{
+      body{background:white;color:black}
+      .card{background:white;border-color:#ddd}
+      header, .toolbar, footer, .dice-card{display:none}
+      .grid{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="no-pdf" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px">
+      <div class="brand" style="min-width:0">
+
+        <div class="logo" aria-hidden="true">  <img src="fate.jpg" alt="Red dot" /></div>
+        <div class="title">
+          <h1 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Fate Core Character Sheet</h1>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="character-summary no-pdf">
+          <div id="characterSummaryName" class="character-summary-name"></div>
+          <div id="characterSummaryMeta" class="character-summary-meta"></div>
+        </div>
+        <div class="toolbar" role="toolbar" aria-label="Actions" style="display:flex;gap:10px;align-items:center;flex-wrap:nowrap;white-space:nowrap">
+          <div class="menu-wrap">
+            <button id="btn-menu" title="Menu" style="background:none;border:none;padding:0 6px;font-size:20px;line-height:1">☰</button>
+            <div id="menu" class="menu">
+              <button id="btn-load-character">📁 Load Character</button>
+              <button id="btn-add-character" title="Add character">➕ New Character</button>
+              <button id="btn-copy-character">📋 Copy Character</button>
+              <button id="btn-delete-character">🗑 Delete Character</button>
+              <button id="btn-import-json">📥 Import JSON</button>
+              <button id="btn-export-json">💾 Export JSON</button>
+              <button id="m-export-md">📝 Export Markdown</button>
+              <button id="m-export-pdf">📄 Export PDF</button>
+              <button id="m-reset">♻️ Reset</button>
+              <button id="m-theme">🌗 Toggle Light/Dark</button>
+              <button id="btn-download-schema" title="Download JSON Schema">📑 Download Schema</button>
+            </div>
+          </div>
+          <span class="badge" id="autosave-status"><span class="status-dot" style="background:var(--good)"></span> autosaved</span>
+        </div>
+      </div>
+    </header>
+
+
+    <div class="grid">
+      <!-- Left column: Identity (with aspects inside) -->
+      <section class="card" aria-labelledby="identity-h">
+        <h2 id="identity-h">Identity</h2>
+        <div class="row">
+          <div class="col-12">
+            <label for="name">Name</label>
+            <input id="name" type="text" placeholder="Character Name" />
+          </div>
+          <div class="col-12">
+            <label for="highConcept">High Concept</label>
+            <input id="highConcept" type="text" placeholder="e.g., Knight-Errant of the Silver Order" />
+          </div>
+          <div class="col-12">
+            <label for="trouble">Trouble</label>
+            <input id="trouble" type="text" placeholder="e.g., The Past Always Finds Me" />
+          </div>
+          <div class="col-12">
+            <label for="description">Description</label>
+            <textarea id="description" placeholder="Appearance, demeanor, notable traits"></textarea>
+          </div>
+          <div class="col-12">
+            <label for="background">Background</label>
+            <textarea id="background" placeholder="History, allies, and other story notes"></textarea>
+          </div>
+          <div class="col-3">
+            <label for="refresh">Refresh</label>
+            <input id="refresh" type="number" min="0" value="3"/>
+          </div>
+          <div class="col-3">
+            <label for="fatePoints">Fate Points</label>
+            <input id="fatePoints" type="number" min="0" />
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Right column: Character image -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <section class="card image-card" aria-labelledby="image-h">
+          <h2 id="image-h" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+            Character Image
+            <button id="btn-image-dialog" class="no-pdf" title="Change image" style="background:none;border:none;padding:0;font-size:20px;line-height:1">☰</button>
+          </h2>
+          <img id="charImage" alt="Character image" />
+        </section>
+      </div>
+    </div>
+
+    <!-- Aspects & Skills -->
+    <div class="grid" style="margin-top:16px">
+      <section class="card" aria-labelledby="aspects-h">
+        <div class="card-head">
+          <h2 id="aspects-h">Aspects</h2>
+          <div class="card-head-controls no-pdf">
+            <button class="fab-button primary" data-add="aspect" aria-label="Add aspect">+</button>
+          </div>
+        </div>
+        <div id="aspects-list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="skills-h">
+        <div class="card-head">
+          <h2 id="skills-h">Skills</h2>
+          <div class="card-head-controls no-pdf">
+            <button class="fab-button primary" data-add-level="top" aria-label="Add level to top">⇧</button>
+            <button class="fab-button primary" data-add-level="bottom" aria-label="Add level to bottom">⇩</button>
+          </div>
+        </div>
+        <div id="skills-grouped"></div>
+      </section>
+
+    </div>
+
+    <!-- Stunts & Extras -->
+    <div class="grid" style="margin-top:16px">
+      
+      <section class="card" aria-labelledby="stunts-h">
+        <div class="card-head">
+          <h2 id="stunts-h">Stunts</h2>
+          <div class="card-head-controls no-pdf">
+            <button class="fab-button primary" data-add="stunt" aria-label="Add stunt">+</button>
+          </div>
+        </div>
+        <div id="stunts-list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="extras-h">
+        <div class="card-head">
+          <h2 id="extras-h">Extras</h2>
+          <div class="card-head-controls no-pdf">
+            <button class="fab-button primary" data-add="extra" aria-label="Add extra">+</button>
+          </div>
+        </div>
+        <div id="extras-list"></div>
+      </section>
+    </div>
+
+    <!-- Consequences left, Stress & Dice on right -->
+    <div class="grid" style="margin-top:16px">
+      <section class="card" aria-labelledby="consq-h">
+        <div class="card-head">
+          <h2 id="consq-h">Consequences</h2>
+          <div class="card-head-controls no-pdf">
+            <button class="fab-button primary" data-add="consequence" aria-label="Add consequence">+</button>
+          </div>
+        </div>
+        <div id="consq-list"></div>
+      </section>
+
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <section class="card" aria-labelledby="stress-h">
+          <h2 id="stress-h">Stress</h2>
+          <div class="stress-group">
+            <div class="stress-line">
+              <span class="stress-label">Physical Stress</span>
+              <div class="stress-track" id="stress-physical"></div>
+              <div class="stress-actions no-pdf">
+                <button class="fab-button primary xs" data-add="stress-physical" aria-label="Add physical stress box">+</button>
+                <button class="fab-button danger xs" data-remove="stress-physical" aria-label="Remove physical stress box">−</button>
+              </div>
+            </div>
+            <div class="stress-line">
+              <span class="stress-label">Mental Stress</span>
+              <div class="stress-track" id="stress-mental"></div>
+              <div class="stress-actions no-pdf">
+                <button class="fab-button primary xs" data-add="stress-mental" aria-label="Add mental stress box">+</button>
+                <button class="fab-button danger xs" data-remove="stress-mental" aria-label="Remove mental stress box">−</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card dice-card no-pdf" aria-labelledby="dice-h">
+          <h2 id="dice-h">Dice Roller (4dF)</h2>
+          <div class="dice-area">
+            <button id="btn-roll" class="primary">Roll 4dF</button>
+            <div id="dice" style="display:flex;gap:8px"></div>
+            <div id="total" class="badge"><strong>Total:</strong>&nbsp;<span>0</span></div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+
+    <footer class="no-pdf">
+      <div>Schema v<span id="schemaVer">1.1.0</span> • <span id="saveTime">Not saved</span></div>
+    </footer>
+  </div>
+
+  <!-- Image dialog -->
+  <dialog id="imageDialog">
+    <form method="dialog" class="modal" style="min-width:300px">
+      <h3 style="margin-top:0">Set Character Image</h3>
+      <label for="imageUrl">Image URL or data URI</label>
+      <input id="imageUrl" type="text" placeholder="https://... or data:image/png;base64,..." />
+      <div style="margin:8px 0">
+        <input id="imageFile" type="file" accept="image/*" />
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+        <button id="btn-clear-image" value="default">Use Default</button>
+        <button value="cancel">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="characterDialog">
+    <form method="dialog" class="modal" style="display:grid;gap:12px;min-width:260px">
+      <h3 style="margin:0">Select Character</h3>
+      <select id="characterPickerSelect" size="6"></select>
+      <div class="modal-actions">
+        <button type="button" data-action="cancel">Cancel</button>
+        <button type="submit" class="primary">Open</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- JSON Schema (Draft-07) embedded -->
+  <script id="jsonSchema" type="application/json">{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://example.com/fate-character.schema.json",
+    "title": "FateCoreCharacter",
+    "type": "object",
+    "required": ["schemaVersion","name","highConcept","trouble","description","background","skills","stunts","extras","aspects","stress","consequences","refresh","fatePoints"],
+    "properties": {
+      "schemaVersion": {"type":"string","const":"1.1.0"},
+      "name": {"type":"string","minLength":1},
+      "highConcept": {"type":"string"},
+      "trouble": {"type":"string"},
+      "description": {"type":"string"},
+      "background": {"type":"string"},
+      "image": {
+        "type":"string",
+        "description":"URL (http/https/file) or data URI. If absent, consumer should use default.",
+        "anyOf":[
+          {"format":"uri"},
+          {"pattern":"^data:image/"}
+        ]
+      },
+      "refresh": {"type":"integer","minimum":0},
+      "fatePoints": {"type":"integer","minimum":0},
+      "pyramidConfig": {
+        "type":"object",
+        "properties": {
+          "minRating": {"type":"integer","minimum":0},
+          "tierCaps": {
+            "type":"array",
+            "items":{"type":"object","properties":{"rating":{"type":"integer"},"maxCount":{"type":"integer","minimum":0}},"required":["rating","maxCount"]}
+          }
+        },
+        "required":["minRating"]
+      },
+      "skills": {
+        "type":"array",
+        "items": {"type":"object","properties":{"name":{"type":"string"},"rating":{"type":"integer"}},"required":["name","rating"]}
+      },
+      "skillLevels": {"type":"array","items":{"type":"integer"}},
+      "aspects": {"type":"array","items":{"type":"string"}},
+      "stunts": {"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}},
+      "extras": {"type":"array","items":{"type":"object","properties":{"title":{"type":"string"},"text":{"type":"string"}},"required":["title","text"]}},
+      "stress": {
+        "type":"object",
+        "required":["physical","mental"],
+        "properties":{
+          "physical":{"type":"array","items":{"type":"boolean"}},
+          "mental":{"type":"array","items":{"type":"boolean"}}
+        }
+      },
+      "stressConfig": {
+        "type":"object",
+        "properties":{
+          "physicalBoxes":{"type":"integer","minimum":0},
+          "mentalBoxes":{"type":"integer","minimum":0}
+        },
+        "required":["physicalBoxes","mentalBoxes"]
+      },
+      "consequences": {
+        "type":"array",
+        "items": {"type":"object","properties":{"severity":{"type":"string","enum":["Mild","Moderate","Severe","Extreme"]},"text":{"type":"string"}},"required":["severity","text"]}
+      }
+    }
+  }
+  </script>
+
+  <!-- html2pdf (via CDN) -->
+  <script>
+    // Lazy-load html2pdf to keep first paint quick
+    let html2pdfReady = null;
+    function loadHtml2Pdf(){
+      if(html2pdfReady) return html2pdfReady;
+      html2pdfReady = new Promise((resolve, reject)=>{
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+        s.onload = ()=>resolve();
+        s.onerror = ()=>reject(new Error('Failed to load html2pdf'));
+        document.head.appendChild(s);
+      });
+      return html2pdfReady;
+    }
+  </script>
+
+  <script>
+    // --- Data Model ---
+    const TRASH_ICON = '🗑';
+
+    const DEFAULT_FATE_SKILLS = [
+      'Athletics','Burglary','Contacts','Crafts','Deceive','Drive','Empathy','Fight','Investigate','Lore','Notice','Physique','Provoke','Rapport','Resources','Shoot','Stealth','Will'
+    ];
+
+    const CONSEQUENCE_LEVELS = ['Mild','Moderate','Severe','Extreme'];
+    const CONSEQUENCE_LABELS = {Mild:'Mild (2)', Moderate:'Moderate (4)', Severe:'Severe (6)', Extreme:'Extreme (8)'};
+
+    const state = {
+      schemaVersion: '1.1.0',
+      name: '',
+      highConcept: '',
+      trouble: '',
+      description: '',
+      background: '',
+      image: null, // url or data URI; null => use default
+      refresh: 3, fatePoints: 3,
+      pyramidConfig: { minRating: 0, tierCaps: [] },
+      skills: [], // {name, rating}
+      aspects: [],
+      stunts: [], // {title, text}
+      extras: [], // {title, text}
+      skillLevels: [0],
+      stress: { physical: [false,false,false], mental: [false,false,false] },
+      stressConfig: { physicalBoxes: 3, mentalBoxes: 3 },
+      consequences: [
+        {severity:'Mild', text:''},
+        {severity:'Moderate', text:''},
+        {severity:'Severe', text:''}
+      ]
+    };
+
+    const EMPTY_STATE = JSON.parse(JSON.stringify(state));
+    const STORAGE_KEY = 'fate_sheet_bundle';
+    const LEGACY_KEY = 'fate_sheet';
+    let characterBundle = { characters: [], currentIndex: 0 };
+    let isDirty = false;
+
+    // --- Utilities ---
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    function debounce(fn,ms){let t;return (...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}}
+    function nowString(){
+      const d=new Date();return d.toLocaleString();
+    }
+
+    // --- Theme ---
+    function applyTheme(theme){
+      const root = document.documentElement;
+      if(theme==='light') root.classList.add('light'); else root.classList.remove('light');
+      localStorage.setItem('fate_theme', theme);
+    }
+
+    // --- Image handling ---
+    function renderImage(){
+      const img = $('#charImage');
+      const src = state.image || "avatar.png";
+      img.src = src;
+    }
+
+    // --- Renderers ---
+    function renderIdentity(){
+      $('#name').value = state.name;
+      $('#highConcept').value = state.highConcept;
+      $('#trouble').value = state.trouble;
+      $('#description').value = state.description;
+      $('#background').value = state.background;
+      $('#refresh').value = state.refresh;
+      $('#fatePoints').value = state.fatePoints;
+          const schemaLabel = $('#schemaVer');
+      if (schemaLabel) schemaLabel.textContent = state.schemaVersion;
+      renderImage();
+    }
+
+    function renderAspects(){
+      const list = $('#aspects-list');
+      if (!list) return;
+      list.innerHTML = '';
+      state.aspects.forEach((text, idx)=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'aspect-item';
+        wrap.dataset.index = idx;
+        wrap.innerHTML = `
+          <div class="aspect-row">
+            <button class="fab-button xs trash no-pdf" data-del="aspect" data-index="${idx}" title="Remove">${TRASH_ICON}</button>
+            <input type="text" data-bind="aspect" data-index="${idx}" placeholder="Aspect text" value="${escapeHtml(text)}"/>
+          </div>`;
+        list.appendChild(wrap);
+      });
+    }
+
+    let activeModal = null;
+    let draggingSkillIndex = null;
+
+    function clearDragHighlights(){
+      document.querySelectorAll('.skill-chip-list.drag-over, .skill-level.drag-over').forEach(el=>el.classList.remove('drag-over'));
+      document.querySelectorAll('.skill-chip.dragging').forEach(el=>el.classList.remove('dragging'));
+    }
+
+    function closeActiveModal(){
+      if (!activeModal) return;
+      const { backdrop, handleKey } = activeModal;
+      document.removeEventListener('keydown', handleKey);
+      backdrop.remove();
+      activeModal = null;
+    }
+
+  function openSkillPicker({ level, initialName = '', onConfirm, onCancel, confirmLabel = 'Add Skill', title }){
+    closeActiveModal();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop no-pdf';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    const heading = title || `Select Skill (+${level})`;
+    modal.innerHTML = `
+      <h3>${heading}</h3>
+      <form>
+        <div>
+          <label for="skill-select">Pick a common skill</label>
+          <select id="skill-select">
+            <option value="">-- Choose --</option>
+          </select>
+        </div>
+        <div>
+          <label for="skill-custom">Or enter a custom skill</label>
+          <input id="skill-custom" type="text" placeholder="Custom skill" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" data-action="cancel">Cancel</button>
+          <button type="submit" class="primary">${confirmLabel}</button>
+        </div>
+      </form>
+    `;
+
+    const form = modal.querySelector('form');
+    const select = modal.querySelector('#skill-select');
+    const custom = modal.querySelector('#skill-custom');
+
+    DEFAULT_FATE_SKILLS.forEach(skill => {
+      const option = document.createElement('option');
+      option.value = skill;
+      option.textContent = skill;
+      select.appendChild(option);
+    });
+
+    if (initialName) {
+      custom.value = initialName;
+      if (DEFAULT_FATE_SKILLS.includes(initialName)) {
+        select.value = initialName;
+      }
+    }
+
+    select.addEventListener('change', () => {
+      if (select.value) {
+        custom.value = select.value;
+        custom.focus();
+        custom.setSelectionRange(custom.value.length, custom.value.length);
+      }
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const value = custom.value.trim() || select.value.trim();
+      if (!value) {
+        custom.focus();
+        return;
+      }
+      closeActiveModal();
+      onConfirm?.(value);
+    });
+
+    const cancel = () => {
+      closeActiveModal();
+      onCancel?.();
+    };
+
+    modal.querySelector('[data-action="cancel"]').addEventListener('click', cancel);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) cancel(); });
+
+    const handleKey = e => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } };
+    document.addEventListener('keydown', handleKey);
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    activeModal = { backdrop, handleKey };
+
+    setTimeout(() => {
+      if (custom.value) {
+        custom.focus();
+        custom.setSelectionRange(custom.value.length, custom.value.length);
+      } else {
+        select.focus();
+      }
+    }, 0);
+
+    activeModal.backdrop = backdrop;
+  }
+
+  function openConsequencePicker({ initialSeverity = 'Mild', onConfirm, onCancel, title = 'Select Consequence Level', confirmLabel = 'Add Consequence' }){
+    closeActiveModal();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop no-pdf';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+      <h3>${title}</h3>
+      <form>
+        <div>
+          <label for="consequence-select">Choose level</label>
+          <select id="consequence-select">
+            ${CONSEQUENCE_LEVELS.map(level => `<option value="${level}">${CONSEQUENCE_LABELS[level]}</option>`).join('')}
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" data-action="cancel">Cancel</button>
+          <button type="submit" class="primary">${confirmLabel}</button>
+        </div>
+      </form>
+    `;
+
+    const select = modal.querySelector('#consequence-select');
+    select.value = initialSeverity && CONSEQUENCE_LEVELS.includes(initialSeverity) ? initialSeverity : 'Mild';
+
+    const form = modal.querySelector('form');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const value = select.value;
+      closeActiveModal();
+      onConfirm?.(value);
+    });
+
+    const cancel = () => {
+      closeActiveModal();
+      onCancel?.();
+    };
+
+    modal.querySelector('[data-action="cancel"]').addEventListener('click', cancel);
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) cancel(); });
+
+    const handleKey = e => { if (e.key === 'Escape') { e.preventDefault(); cancel(); } };
+    document.addEventListener('keydown', handleKey);
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    activeModal = { backdrop, handleKey };
+
+    select.focus();
+
+    activeModal.backdrop = backdrop;
+  }
+
+  function cloneStateData(src){
+    return JSON.parse(JSON.stringify(src ?? EMPTY_STATE));
+  }
+
+  function createCharacterRecord(data){
+    const now = Date.now();
+    const stateData = cloneStateData(data);
+    return {
+      id: `char-${now}-${Math.random().toString(36).slice(2,6)}`,
+      name: stateData.name || 'New Character',
+      updatedAt: now,
+      data: stateData
+    };
+  }
+
+  function normalizeBundle(raw){
+    const normalized = { characters: [], currentIndex: 0 };
+    if (raw && Array.isArray(raw.characters)) {
+      normalized.characters = raw.characters.map((rec, idx) => {
+        const data = cloneStateData(rec?.data);
+        return {
+          id: rec?.id || `char-${Date.now()}-${idx}`,
+          name: rec?.name || data.name || `Character ${idx + 1}`,
+          updatedAt: typeof rec?.updatedAt === 'number' ? rec.updatedAt : Date.now(),
+          data
+        };
+      });
+      if (Number.isInteger(raw.currentIndex)) {
+        normalized.currentIndex = Math.min(Math.max(raw.currentIndex, 0), Math.max(0, normalized.characters.length - 1));
+      }
+    }
+    if (!normalized.characters.length) {
+      const record = createCharacterRecord(EMPTY_STATE);
+      record.name = 'Character 1';
+      normalized.characters.push(record);
+      normalized.currentIndex = 0;
+    }
+    return normalized;
+  }
+
+  function applyStateFromRecord(record){
+    loadFromObject(cloneStateData(record?.data));
+    syncCurrentCharacterMetadata();
+  }
+
+  function syncCurrentCharacterMetadata(){
+    if (!characterBundle.characters.length) return;
+    const record = characterBundle.characters[characterBundle.currentIndex];
+    if (!record) return;
+    record.name = state.name?.trim() || `Character ${characterBundle.currentIndex + 1}`;
+  }
+
+  function captureStateToBundle(touchTime = true){
+    if (!characterBundle.characters.length) return;
+    const record = characterBundle.characters[characterBundle.currentIndex];
+    if (!record) return;
+    record.data = cloneStateData(state);
+    syncCurrentCharacterMetadata();
+    if (touchTime) record.updatedAt = Date.now();
+  }
+
+  function formatTimestamp(ts){
+    if (!ts) return 'Never';
+    const date = new Date(ts);
+    if (Number.isNaN(date.getTime())) return 'Never';
+    return date.toLocaleString();
+  }
+
+  function updateCharacterPicker(){
+    const picker = document.getElementById('characterPickerSelect');
+    const summaryName = document.getElementById('characterSummaryName');
+    const summaryMeta = document.getElementById('characterSummaryMeta');
+
+    if (!characterBundle.characters || !characterBundle.characters.length) {
+      if (picker) picker.innerHTML = '';
+      if (summaryName) summaryName.textContent = 'No character';
+      if (summaryMeta) summaryMeta.textContent = '';
+      return;
+    }
+
+    if (picker) {
+      picker.innerHTML = '';
+      characterBundle.characters.forEach((record, idx) => {
+        const option = document.createElement('option');
+        option.value = String(idx);
+        const name = record.name?.trim() || `Character ${idx + 1}`;
+        option.textContent = `${name} — ${formatTimestamp(record.updatedAt)}`;
+        if (idx === characterBundle.currentIndex) option.selected = true;
+        picker.appendChild(option);
+      });
+      if (picker.options.length) {
+        picker.selectedIndex = characterBundle.currentIndex;
+        picker.value = String(characterBundle.currentIndex);
+      }
+    }
+
+    const current = characterBundle.characters[characterBundle.currentIndex];
+    if (summaryName) {
+      const name = current ? (current.name?.trim() || `Character ${characterBundle.currentIndex + 1}`) : 'No character';
+      summaryName.textContent = `${name}`;
+    }
+    if (summaryMeta) {
+      const timestamp = current?.updatedAt;
+      const formatted = formatTimestamp(timestamp);
+      if (isDirty) {
+        summaryMeta.textContent = `Unsaved changes • Last saved ${formatted}`;
+      } else {
+        summaryMeta.textContent = `Last saved ${formatted}`;
+      }
+    }
+  }
+
+  function switchCharacter(index){
+    if (index === characterBundle.currentIndex || index < 0 || index >= characterBundle.characters.length) return;
+    if (isDirty) {
+      saveLocal();
+    } else {
+      captureStateToBundle(false);
+    }
+    characterBundle.currentIndex = index;
+    applyStateFromRecord(characterBundle.characters[index]);
+    renderAll();
+    saveLocal(false);
+  }
+
+  function addCharacter(){
+    captureStateToBundle();
+    const record = createCharacterRecord(EMPTY_STATE);
+    record.name = `Character ${characterBundle.characters.length + 1}`;
+    characterBundle.characters.push(record);
+    characterBundle.currentIndex = characterBundle.characters.length - 1;
+    applyStateFromRecord(record);
+    renderAll();
+    saveLocal();
+  }
+
+  function copyCharacter(){
+    if (!characterBundle.characters.length) {
+      addCharacter();
+      return;
+    }
+    captureStateToBundle();
+    const current = characterBundle.characters[characterBundle.currentIndex];
+    const copyRecord = createCharacterRecord(state);
+    const baseName = current?.name?.trim() || `Character ${characterBundle.currentIndex + 1}`;
+    const existingNames = new Set(characterBundle.characters.map(rec => rec.name));
+    let newName = `${baseName} Copy`;
+    let suffix = 2;
+    while (existingNames.has(newName)) {
+      newName = `${baseName} Copy ${suffix++}`;
+    }
+    copyRecord.name = newName;
+    characterBundle.characters.splice(characterBundle.currentIndex + 1, 0, copyRecord);
+    characterBundle.currentIndex += 1;
+    applyStateFromRecord(copyRecord);
+    state.name = newName;
+    renderAll();
+    saveLocal(false);
+  }
+
+  function deleteCharacter(){
+    if (!characterBundle.characters.length) return;
+    const current = characterBundle.characters[characterBundle.currentIndex];
+    const name = current?.name || `Character ${characterBundle.currentIndex + 1}`;
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    captureStateToBundle(false);
+    characterBundle.characters.splice(characterBundle.currentIndex, 1);
+    if (!characterBundle.characters.length) {
+      const record = createCharacterRecord(EMPTY_STATE);
+      record.name = 'Character 1';
+      characterBundle.characters.push(record);
+      characterBundle.currentIndex = 0;
+    } else if (characterBundle.currentIndex >= characterBundle.characters.length) {
+      characterBundle.currentIndex = characterBundle.characters.length - 1;
+    }
+    applyStateFromRecord(characterBundle.characters[characterBundle.currentIndex]);
+    renderAll();
+    saveLocal(false);
+  }
+
+  function openCharacterDialog(){
+    captureStateToBundle(false);
+    updateCharacterPicker();
+    const dialog = document.getElementById('characterDialog');
+    const select = document.getElementById('characterPickerSelect');
+    if (!dialog || !select) return;
+    if (characterBundle.characters.length) {
+      select.selectedIndex = characterBundle.currentIndex;
+    }
+    dialog.showModal();
+    select.focus();
+  }
+
+  function renderSkills(){
+
+    if (!Array.isArray(state.skillLevels)) state.skillLevels = [];
+
+    const container = document.getElementById('skills-grouped');
+    container.innerHTML = '';
+
+    const byLevel = new Map();
+    state.skills.forEach((sk, idx) => {
+      const arr = byLevel.get(sk.rating) || [];
+      arr.push({ idx, sk });
+      byLevel.set(sk.rating, arr);
+    });
+
+    const levelSet = new Set(state.skillLevels);
+    byLevel.forEach((_, lvl) => levelSet.add(lvl));
+    if (!levelSet.size) levelSet.add(0);
+
+    const levels = Array.from(levelSet).sort((a,b)=>b-a);
+    state.skillLevels = Array.from(new Set(levels)).sort((a,b)=>a-b);
+
+    const minLevel = Math.min(...levels);
+    const maxLevel = Math.max(...levels);
+
+    levels.forEach(lvl => {
+      const levelWrap = document.createElement('div');
+      levelWrap.className = 'skill-level';
+      levelWrap.dataset.level = String(lvl);
+
+      const deleteCell = document.createElement('div');
+      deleteCell.className = 'skill-level-delete';
+
+      if (lvl === minLevel || lvl === maxLevel) {
+        const removeLevel = document.createElement('button');
+        removeLevel.className = 'fab-button xs trash skill-level-remove no-pdf';
+        removeLevel.setAttribute('data-remove-level', String(lvl));
+        removeLevel.setAttribute('aria-label', `Remove +${lvl} level`);
+        removeLevel.textContent = TRASH_ICON;
+        deleteCell.appendChild(removeLevel);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'skill-level-placeholder';
+        deleteCell.appendChild(placeholder);
+      }
+
+      const label = document.createElement('div');
+      label.className = 'skill-level-label';
+      label.textContent = `+${lvl}`;
+
+      const list = document.createElement('div');
+      list.className = 'skill-chip-list';
+      list.dataset.level = String(lvl);
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'fab-button primary xs no-pdf';
+      addBtn.setAttribute('data-add-skill-for', String(lvl));
+      addBtn.setAttribute('aria-label', `Add skill to +${lvl}`);
+      addBtn.textContent = '+';
+
+      const registerDropZone = zone => {
+        zone.addEventListener('dragover', e => {
+          if (draggingSkillIndex === null) return;
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', e => {
+          if (!zone.contains(e.relatedTarget)) {
+            zone.classList.remove('drag-over');
+          }
+        });
+        zone.addEventListener('drop', e => {
+          if (draggingSkillIndex === null) return;
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          clearDragHighlights();
+          const idx = draggingSkillIndex;
+          draggingSkillIndex = null;
+          const skill = state.skills[idx];
+          if (!skill) { renderSkills(); return; }
+          if (skill.rating !== lvl){
+            skill.rating = lvl;
+            renderSkills();
+            changed();
+          } else {
+            renderSkills();
+          }
+        });
+      };
+
+      registerDropZone(list);
+      registerDropZone(levelWrap);
+
+      // Sort by name for nicer display within level
+      const items = (byLevel.get(lvl) || []).slice()
+        .sort((a, b) => (a.sk.name || '').localeCompare(b.sk.name || ''));
+
+      items.forEach(({ idx, sk }) => {
+        const chip = document.createElement('div');
+        chip.className = 'skill-chip';
+        chip.dataset.index = String(idx);
+        chip.setAttribute('draggable', 'true');
+
+        const label = document.createElement('span');
+        label.className = 'skill-chip-label';
+        if (!sk.name) {
+          chip.classList.add('is-empty');
+          label.classList.add('is-empty');
+          label.textContent = 'Set Skill';
+        } else {
+          label.textContent = sk.name;
+        }
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'chip-remove no-pdf';
+        delBtn.setAttribute('data-del', 'skill');
+        delBtn.setAttribute('data-index', String(idx));
+        delBtn.title = 'Remove';
+        delBtn.textContent = '✕';
+        delBtn.setAttribute('draggable', 'false');
+
+        chip.appendChild(label);
+        chip.appendChild(delBtn);
+        list.appendChild(chip);
+
+        chip.addEventListener('dragstart', e => {
+          draggingSkillIndex = idx;
+          chip.classList.add('dragging');
+          e.dataTransfer?.setData('text/plain', String(idx));
+          e.dataTransfer?.setDragImage(chip, chip.offsetWidth / 2, chip.offsetHeight / 2);
+        });
+
+        chip.addEventListener('dragend', () => {
+          draggingSkillIndex = null;
+          clearDragHighlights();
+        });
+      });
+
+      levelWrap.appendChild(deleteCell);
+      levelWrap.appendChild(label);
+      levelWrap.appendChild(list);
+      levelWrap.appendChild(addBtn);
+      container.appendChild(levelWrap);
+    });
+  }
+
+
+    function renderStunts(){
+      const list = $('#stunts-list');
+      list.innerHTML = '';
+      state.stunts.forEach((st, idx)=>{
+        const div = document.createElement('div');
+        div.style.marginBottom = '8px';
+        div.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <button class="fab-button xs trash no-pdf" data-del="stunt" data-index="${idx}" title="Remove">${TRASH_ICON}</button>
+            <input type="text" data-stunt-title placeholder="Title" style="flex:1" value="${escapeHtml(st.title)}"/>
+          </div>
+          <textarea data-stunt-text placeholder="Description">${escapeHtml(st.text)}</textarea>`;
+        list.appendChild(div);
+      });
+    }
+
+    function renderExtras(){
+      const list = $('#extras-list');
+      if (!list) return;
+      list.innerHTML = '';
+      state.extras.forEach((ex, idx)=>{
+        const div = document.createElement('div');
+        div.style.marginBottom = '8px';
+        div.innerHTML = `
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+            <button class="fab-button xs trash no-pdf" data-del="extra" data-index="${idx}" title="Remove">${TRASH_ICON}</button>
+            <input type="text" data-extra-title placeholder="Title" style="flex:1;max-width:260px" value="${escapeHtml(ex.title)}"/>
+          </div>
+          <textarea data-extra-text placeholder="Description">${escapeHtml(ex.text)}</textarea>`;
+        list.appendChild(div);
+      });
+    }
+
+    function renderStress(){
+      const phys = $('#stress-physical');
+      const ment = $('#stress-mental');
+      phys.innerHTML = ''; ment.innerHTML = '';
+      for(let i=0;i<state.stressConfig.physicalBoxes;i++){
+        const b = document.createElement('div');
+        b.className = 'stress-box' + (state.stress.physical[i]?' checked':'');
+        b.dataset.track='physical'; b.dataset.index=i;
+        b.textContent = i+1; phys.appendChild(b);
+      }
+      for(let i=0;i<state.stressConfig.mentalBoxes;i++){
+        const b = document.createElement('div');
+        b.className = 'stress-box' + (state.stress.mental[i]?' checked':'');
+        b.dataset.track='mental'; b.dataset.index=i;
+        b.textContent = i+1; ment.appendChild(b);
+      }
+    }
+
+    function renderConsequences(){
+      const list = $('#consq-list');
+      list.innerHTML = '';
+      state.consequences.forEach((c, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'consequence-row';
+        row.dataset.index = idx;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'fab-button xs trash no-pdf';
+        delBtn.setAttribute('data-del', 'consequence');
+        delBtn.setAttribute('data-index', String(idx));
+        delBtn.title = 'Remove';
+        delBtn.textContent = TRASH_ICON;
+
+        const level = document.createElement('span');
+        level.className = 'consequence-level';
+        level.textContent = CONSEQUENCE_LABELS[c.severity] || c.severity;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.setAttribute('data-consq-text', '');
+        input.value = c.text || '';
+        input.placeholder = 'Consequence text';
+
+        row.appendChild(delBtn);
+        row.appendChild(level);
+        row.appendChild(input);
+        list.appendChild(row);
+      });
+    }
+
+
+    function renderAll(){
+      renderIdentity();
+      renderAspects();
+      renderSkills();
+      renderStunts();
+      renderExtras();
+      renderStress();
+      renderConsequences();
+      updateCharacterPicker();
+    }
+
+    // --- Autosave ---
+    const saveDebounced = debounce(() => saveLocal(), 400);
+    function markSaved(){
+      isDirty = false;
+      $('#autosave-status').innerHTML = `<span class="status-dot" style="background:var(--good)"></span> autosaved ${escapeHtml(nowString())}`;
+      $('#saveTime').textContent = `Last saved ${nowString()}`;
+      const schemaSpan = $('#schemaVer');
+      if (schemaSpan) schemaSpan.textContent = state.schemaVersion;
+      updateCharacterPicker();
+    }
+    function markDirty(){
+      isDirty = true;
+      $('#autosave-status').innerHTML = `<span class="status-dot" style="background:var(--warn)"></span> unsaved`;
+      const schemaSpan = $('#schemaVer');
+      if (schemaSpan) schemaSpan.textContent = state.schemaVersion;
+      updateCharacterPicker();
+    }
+
+    function saveLocal(touchTime = true){
+      captureStateToBundle(touchTime);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(characterBundle));
+      } catch (e) {
+        console.warn('Failed to save characters', e);
+      }
+      markSaved();
+    }
+    function loadLocal(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          characterBundle = normalizeBundle(JSON.parse(raw));
+          applyStateFromRecord(characterBundle.characters[characterBundle.currentIndex]);
+          updateCharacterPicker();
+          return true;
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        try {
+          const legacyState = JSON.parse(legacy);
+          loadFromObject(legacyState);
+          characterBundle = normalizeBundle({ characters: [{ data: cloneStateData(state), name: legacyState.name, updatedAt: Date.now() }], currentIndex: 0 });
+          saveLocal();
+          localStorage.removeItem(LEGACY_KEY);
+          updateCharacterPicker();
+          return true;
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      characterBundle = normalizeBundle({});
+      applyStateFromRecord(characterBundle.characters[characterBundle.currentIndex]);
+      updateCharacterPicker();
+      return false;
+    }
+
+    // --- Event wiring ---
+    function onInputs(){
+      // Menu
+      const menuBtn = $('#btn-menu'); const menu = $('#menu');
+      menuBtn.addEventListener('click', ()=>menu.classList.toggle('open'));
+      document.addEventListener('click', (e)=>{ if(!menu.contains(e.target) && e.target!==menuBtn) menu.classList.remove('open'); });
+      $('#m-export-md').addEventListener('click', ()=>{menu.classList.remove('open'); exportMarkdown();});
+      $('#m-export-pdf').addEventListener('click', ()=>{menu.classList.remove('open'); exportPDF();});
+      $('#m-reset').addEventListener('click', ()=>{menu.classList.remove('open'); resetAll();});
+      $('#m-theme').addEventListener('click', ()=>{menu.classList.remove('open'); toggleTheme();});
+
+      const loadCharacterBtn = $('#btn-load-character');
+      if (loadCharacterBtn) {
+        loadCharacterBtn.addEventListener('click', () => {
+          menu.classList.remove('open');
+          openCharacterDialog();
+        });
+      }
+      const addCharacterBtn = $('#btn-add-character');
+      if (addCharacterBtn) {
+        addCharacterBtn.addEventListener('click', () => {
+          menu.classList.remove('open');
+          addCharacter();
+        });
+      }
+      const copyCharacterBtn = $('#btn-copy-character');
+      if (copyCharacterBtn) {
+        copyCharacterBtn.addEventListener('click', () => {
+          menu.classList.remove('open');
+          copyCharacter();
+        });
+      }
+      const deleteCharacterBtn = $('#btn-delete-character');
+      if (deleteCharacterBtn) {
+        deleteCharacterBtn.addEventListener('click', () => {
+          menu.classList.remove('open');
+          deleteCharacter();
+        });
+      }
+
+      const characterDialog = document.getElementById('characterDialog');
+      const characterSelect = document.getElementById('characterPickerSelect');
+      if (characterDialog && characterSelect) {
+        const cancelBtn = characterDialog.querySelector('[data-action="cancel"]');
+        if (cancelBtn) cancelBtn.addEventListener('click', () => characterDialog.close());
+        const form = characterDialog.querySelector('form');
+        if (form) {
+          form.addEventListener('submit', e => {
+            e.preventDefault();
+            const idx = parseInt(characterSelect.value, 10);
+            characterDialog.close();
+            if (!Number.isNaN(idx)) switchCharacter(idx);
+          });
+        }
+        characterSelect.addEventListener('dblclick', () => {
+          const idx = parseInt(characterSelect.value, 10);
+          if (!Number.isNaN(idx)) {
+            characterDialog.close();
+            switchCharacter(idx);
+          }
+        });
+      }
+
+      // Identity
+      $('#name').addEventListener('input', e=>{state.name=e.target.value; changed();});
+      $('#highConcept').addEventListener('input', e=>{state.highConcept=e.target.value; changed();});
+      $('#trouble').addEventListener('input', e=>{state.trouble=e.target.value; changed();});
+      $('#description').addEventListener('input', e=>{state.description=e.target.value; changed();});
+      $('#background').addEventListener('input', e=>{state.background=e.target.value; changed();});
+      $('#refresh').addEventListener('input', e=>{state.refresh=parseInt(e.target.value||'0',10); changed();});
+      $('#fatePoints').addEventListener('input', e=>{state.fatePoints=parseInt(e.target.value||'0',10); changed();});
+
+      // Image dialog
+      const dlg = document.getElementById('imageDialog');
+      $('#btn-image-dialog').addEventListener('click', ()=>dlg.showModal());
+      dlg.addEventListener('close', ()=>{/* no-op */});
+      document.getElementById('imageUrl').addEventListener('change', e=>{state.image = e.target.value || null; renderImage(); changed();});
+      document.getElementById('imageFile').addEventListener('change', async e=>{
+        const f = e.target.files?.[0]; if(!f) return;
+        const b64 = await fileToDataURL(f); state.image = b64; document.getElementById('imageUrl').value = b64; renderImage(); changed();
+      });
+      document.getElementById('btn-clear-image').addEventListener('click', (e)=>{ e.preventDefault(); state.image=null; document.getElementById('imageUrl').value=''; renderImage(); changed(); });
+
+      // Aspects
+      document.querySelector('[data-add="aspect"]').addEventListener('click', ()=>{state.aspects.push(''); renderAspects(); changed();});
+      $('#aspects-list').addEventListener('input', e=>{
+        const t=e.target; if(t.matches('[data-bind="aspect"]')){
+          const i=+t.dataset.index; state.aspects[i]=t.value; changed();
+        }
+      });
+      $('#aspects-list').addEventListener('click', e=>{
+        const b=e.target.closest('button[data-del="aspect"]'); if(!b) return; const i=+b.dataset.index; state.aspects.splice(i,1); renderAspects(); changed();
+      });
+
+      // Skills (grouped by level)
+      {
+        const addTopBtn = document.querySelector('[data-add-level="top"]');
+        const addBottomBtn = document.querySelector('[data-add-level="bottom"]');
+        const skillsRoot = document.getElementById('skills-grouped');
+      
+        if (addTopBtn) {
+          addTopBtn.addEventListener('click', () => {
+            // Add a new highest level entry
+            if (!Array.isArray(state.skillLevels)) state.skillLevels = [];
+            const levels = state.skillLevels.length ? state.skillLevels.slice() : (state.skills.length ? state.skills.map(s=>s.rating) : [0]);
+            const max = levels.length ? Math.max(...levels) : 0;
+            const newLevel = max + 1;
+            if (!state.skillLevels.includes(newLevel)) state.skillLevels.push(newLevel);
+            state.skillLevels.sort((a,b)=>a-b);
+            renderSkills();
+            changed();
+          });
+        }
+
+        if (addBottomBtn) {
+          addBottomBtn.addEventListener('click', () => {
+            // Add a new lowest level entry
+            if (!Array.isArray(state.skillLevels)) state.skillLevels = [];
+            const levels = state.skillLevels.length ? state.skillLevels.slice() : (state.skills.length ? state.skills.map(s=>s.rating) : [0]);
+            const min = levels.length ? Math.min(...levels) : 0;
+            const newLevel = min - 1;
+            if (!state.skillLevels.includes(newLevel)) state.skillLevels.push(newLevel);
+            state.skillLevels.sort((a,b)=>a-b);
+            renderSkills();
+            changed();
+          });
+        }
+
+        if (skillsRoot) {
+          // Add skill to a specific level / delete skill
+          skillsRoot.addEventListener('click', e => {
+            const addBtn = e.target.closest('[data-add-skill-for]');
+            if (addBtn) {
+              const lvl = parseInt(addBtn.getAttribute('data-add-skill-for'), 10);
+              if (!Array.isArray(state.skillLevels)) state.skillLevels = [];
+              if (!state.skillLevels.includes(lvl)) {
+                state.skillLevels.push(lvl);
+                state.skillLevels.sort((a,b)=>a-b);
+              }
+              const idx = state.skills.push({ name: '', rating: lvl }) - 1;
+              openSkillPicker({
+                level: lvl,
+                title: `Add Skill (+${lvl})`,
+                onConfirm(name){ state.skills[idx].name = name; renderSkills(); changed(); },
+                onCancel(){ state.skills.splice(idx, 1); renderSkills(); }
+              });
+              return;
+            }
+            const del = e.target.closest('button[data-del="skill"]');
+            if (del) {
+              const i = +del.dataset.index;
+              const level = state.skills[i]?.rating;
+              state.skills.splice(i, 1);
+              if (typeof level === 'number' && !state.skills.some(s => s.rating === level)) {
+                // keep level in skillLevels but no action needed
+              }
+              renderSkills(); changed();
+              return;
+            }
+            const removeLevelBtn = e.target.closest('button[data-remove-level]');
+            if (removeLevelBtn) {
+              const lvl = parseInt(removeLevelBtn.getAttribute('data-remove-level'), 10);
+              if (!Number.isNaN(lvl)) {
+                state.skillLevels = (state.skillLevels||[]).filter(n => n !== lvl);
+                // Drop any skills at that level
+                state.skills = state.skills.filter(sk => sk.rating !== lvl);
+                renderSkills();
+                changed();
+              }
+              return;
+            }
+            const chip = e.target.closest('.skill-chip');
+            if (chip) {
+              const idx = +chip.dataset.index;
+              if (Number.isNaN(idx) || e.target.closest('button')) return;
+              const lvl = state.skills[idx]?.rating ?? 0;
+              openSkillPicker({
+                level: lvl,
+                initialName: state.skills[idx].name,
+                confirmLabel: 'Save',
+                title: `Edit Skill (+${lvl})`,
+                onConfirm(name){ state.skills[idx].name = name; renderSkills(); changed(); },
+                onCancel: null
+              });
+            }
+          });
+        }
+      }
+
+      // Stunts
+      document.querySelector('[data-add="stunt"]').addEventListener('click', ()=>{state.stunts.push({title:'',text:''}); renderStunts(); changed();});
+      $('#stunts-list').addEventListener('input', e=>{
+        const wrap = e.target.closest('div'); if(!wrap) return; const idx=[...$('#stunts-list').children].indexOf(wrap);
+        if(e.target.matches('[data-stunt-title]')){ state.stunts[idx].title=e.target.value; changed(); }
+        if(e.target.matches('[data-stunt-text]')){ state.stunts[idx].text=e.target.value; changed(); }
+      });
+      $('#stunts-list').addEventListener('click', e=>{
+        const b=e.target.closest('button[data-del="stunt"]'); if(!b) return; const i=+b.dataset.index; state.stunts.splice(i,1); renderStunts(); changed();
+      });
+
+      // Extras
+      document.querySelector('[data-add="extra"]').addEventListener('click', ()=>{state.extras.push({title:'',text:''}); renderExtras(); changed();});
+      $('#extras-list').addEventListener('input', e=>{
+        const wrap = e.target.closest('div'); if(!wrap) return; const idx=[...$('#extras-list').children].indexOf(wrap);
+        if(e.target.matches('[data-extra-title]')){ state.extras[idx].title=e.target.value; changed(); }
+        if(e.target.matches('[data-extra-text]')){ state.extras[idx].text=e.target.value; changed(); }
+      });
+      $('#extras-list').addEventListener('click', e=>{
+        const b=e.target.closest('button[data-del="extra"]'); if(!b) return; const i=+b.dataset.index; state.extras.splice(i,1); renderExtras(); changed();
+      });
+
+      // Stress
+      $('[data-add="stress-physical"]').addEventListener('click', ()=>{state.stressConfig.physicalBoxes++; state.stress.physical.push(false); renderStress(); changed();});
+      $('[data-remove="stress-physical"]').addEventListener('click', ()=>{if(state.stressConfig.physicalBoxes>0){state.stressConfig.physicalBoxes--; state.stress.physical.pop(); renderStress(); changed();}});
+      $('[data-add="stress-mental"]').addEventListener('click', ()=>{state.stressConfig.mentalBoxes++; state.stress.mental.push(false); renderStress(); changed();});
+      $('[data-remove="stress-mental"]').addEventListener('click', ()=>{if(state.stressConfig.mentalBoxes>0){state.stressConfig.mentalBoxes--; state.stress.mental.pop(); renderStress(); changed();}});
+      $('#stress-physical').addEventListener('click', e=>{
+        const b=e.target.closest('.stress-box'); if(!b) return; const i=+b.dataset.index; state.stress.physical[i]=!state.stress.physical[i]; renderStress(); changed();
+      });
+      $('#stress-mental').addEventListener('click', e=>{
+        const b=e.target.closest('.stress-box'); if(!b) return; const i=+b.dataset.index; state.stress.mental[i]=!state.stress.mental[i]; renderStress(); changed();
+      });
+
+      // Consequences
+      document.querySelector('[data-add="consequence"]').addEventListener('click', ()=>{
+        openConsequencePicker({
+          onConfirm(level){
+            state.consequences.push({severity:level, text:''});
+            renderConsequences();
+            changed();
+          }
+        });
+      });
+      $('#consq-list').addEventListener('click', e=>{
+        const del=e.target.closest('button[data-del="consequence"]');
+        if(del){ const i=+del.dataset.index; state.consequences.splice(i,1); renderConsequences(); changed(); }
+      });
+      $('#consq-list').addEventListener('input', e=>{
+        const wrap=e.target.closest('[data-index]'); if(!wrap) return; const i=+wrap.dataset.index;
+        if(e.target.matches('[data-consq-text]')) state.consequences[i].text=e.target.value;
+        changed();
+      });
+
+      // Toolbar basic actions
+      $('#btn-export-json').addEventListener('click', ()=>{menu.classList.remove('open'); exportJSON();});
+      $('#btn-import-json').addEventListener('click', ()=>{menu.classList.remove('open'); importJSON();});
+      $('#btn-download-schema').addEventListener('click', ()=>{menu.classList.remove('open'); downloadSchema();});
+
+      // Dice
+      $('#btn-roll').addEventListener('click', rollDice);
+    }
+
+    function changed(){ syncCurrentCharacterMetadata(); markDirty(); saveDebounced(); }
+
+    // --- File helpers ---
+    function download(filename, content, type='text/plain'){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([content], {type}));
+      a.download = filename; a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    }
+    async function importJSON(){
+      const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+      inp.onchange = async ()=>{
+        const file = inp.files?.[0]; if(!file) return;
+        const text = await file.text();
+        try{
+          const obj = JSON.parse(text);
+          if (obj && Array.isArray(obj.characters)) {
+            characterBundle = normalizeBundle(obj);
+            applyStateFromRecord(characterBundle.characters[characterBundle.currentIndex]);
+          } else {
+            loadFromObject(obj);
+            characterBundle = normalizeBundle({ characters: [{ data: cloneStateData(state), name: obj?.name, updatedAt: Date.now() }], currentIndex: 0 });
+          }
+          renderAll();
+          saveLocal();
+        }catch(e){ alert('Invalid JSON: '+e.message); }
+      };
+      inp.click();
+    }
+
+    function exportJSON(){
+      captureStateToBundle();
+      const payload = {
+        characters: characterBundle.characters,
+        currentIndex: characterBundle.currentIndex
+      };
+      const out = JSON.stringify(payload, null, 2);
+      const current = characterBundle.characters[characterBundle.currentIndex];
+      const fname = (current?.name || 'characters').replace(/[^a-z0-9-_]+/gi,'_') + '-bundle.json';
+      download(fname, out, 'application/json');
+    }
+
+    function downloadSchema(){
+      const schema = document.getElementById('jsonSchema').textContent.trim();
+      download('fate-character.schema.json', schema, 'application/json');
+    }
+
+    function exportMarkdown(){
+      const md = toMarkdown(state);
+      const fname = (state.name||'character')+'.md';
+      download(fname, md, 'text/markdown');
+    }
+
+    async function exportPDF(){
+      try{
+        await loadHtml2Pdf();
+        const root = document.querySelector('.container');
+
+        // Force LIGHT mode during export
+        const originalTheme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+        applyTheme('light');
+
+        // Hide interactive-only UI
+        root.classList.add('pdf-export');
+
+        // Scale to fit one Letter page (approx using 96 dpi)
+        const marginIn = 0.4; const pxPerIn = 96;
+        const pageW = 8.5*pxPerIn - 2*marginIn*pxPerIn;
+        const pageH = 11*pxPerIn - 2*marginIn*pxPerIn;
+        const rect = root.getBoundingClientRect();
+        const scale = Math.min(pageW/rect.width, pageH/rect.height, 1);
+        const prevTransform = root.style.transform;
+        const prevTransformOrigin = root.style.transformOrigin;
+        root.style.transformOrigin = 'top left';
+        root.style.transform = `scale(${scale})`;
+
+        const opt = {
+          margin:       marginIn,
+          filename:     (state.name||'character')+'.pdf',
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        await window.html2pdf().from(root).set(opt).save();
+
+        // Cleanup
+        root.style.transform = prevTransform;
+        root.style.transformOrigin = prevTransformOrigin;
+        root.classList.remove('pdf-export');
+        applyTheme(originalTheme);
+      }catch(e){
+        alert('PDF export failed: '+e.message+' — Tip: run from HTTPS/localhost.');
+      }
+    }
+
+    function resetAll(){
+      if(!confirm('Reset all fields to defaults and clear autosave?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_KEY);
+      characterBundle = normalizeBundle({});
+      applyStateFromRecord(characterBundle.characters[characterBundle.currentIndex]);
+      renderAll();
+      saveLocal();
+    }
+
+    function loadFromObject(obj){
+      // Shallow validation; schema validation could be added in future.
+      const keys = Object.keys(state);
+      for(const k of keys){ if(k in obj) state[k]=obj[k]; }
+
+      state.description = typeof state.description === 'string' ? state.description : '';
+      state.background = typeof state.background === 'string' ? state.background : '';
+      if(!Array.isArray(state.extras)) state.extras = [];
+      state.extras = state.extras.map(ex=>({
+        title: typeof ex?.title === 'string' ? ex.title : '',
+        text: typeof ex?.text === 'string' ? ex.text : ''
+      }));
+      if(!Array.isArray(state.stunts)) state.stunts = [];
+      state.stunts = state.stunts.map(st=>({
+        title: typeof st?.title === 'string' ? st.title : '',
+        text: typeof st?.text === 'string' ? st.text : ''
+      }));
+      if(!Array.isArray(state.aspects)) state.aspects = [];
+      if(!Array.isArray(state.consequences)) state.consequences = [];
+      state.consequences = state.consequences.map(c=>({
+        severity: CONSEQUENCE_LEVELS.includes(c?.severity) ? c.severity : 'Mild',
+        text: typeof c?.text === 'string' ? c.text : ''
+      }));
+      if(!Array.isArray(state.skillLevels)){
+        const derived = Array.from(new Set(state.skills.map(s=>typeof s?.rating==='number'?s.rating:0)));
+        state.skillLevels = derived.length ? derived : [0];
+      } else {
+        state.skillLevels = Array.from(new Set(state.skillLevels.filter(n=>Number.isFinite(n)))) ;
+        if(!state.skillLevels.length) state.skillLevels = [0];
+      }
+      state.skillLevels.sort((a,b)=>a-b);
+      state.schemaVersion = '1.1.0';
+    }
+
+    // --- Markdown ---
+    function toMarkdown(s){
+      const lines = [];
+      lines.push(`# ${s.name||'Unnamed Character'}`);
+      lines.push('');
+      lines.push(`**High Concept:** ${s.highConcept||''}`);
+      lines.push(`**Trouble:** ${s.trouble||''}`);
+      lines.push(`**Description:** ${s.description||''}`);
+      lines.push(`**Background:** ${s.background||''}`);
+      lines.push('');
+      lines.push(`**Refresh:** ${s.refresh}`);
+      lines.push('');
+      lines.push('## Aspects');
+      (s.aspects||[]).forEach((a,i)=>lines.push(`- ${a||''}`));
+      lines.push('');
+      lines.push('## Skills');
+      lines.push('');
+      // Skills table
+      lines.push('| Skill | Rating |');
+      lines.push('|-------|--------|');
+      (s.skills||[]).sort((a,b)=>b.rating-a.rating||a.name.localeCompare(b.name)).forEach(sk=>{
+        lines.push(`| ${sk.name||''} | +${sk.rating} |`);
+      });
+      lines.push('');
+      lines.push('## Stunts');
+      (s.stunts||[]).forEach(st=>{lines.push(`- **${st.title||''}:** ${st.text||''}`)});
+      lines.push('');
+      lines.push('## Extras');
+      (s.extras||[]).forEach(ex=>{lines.push(`- **${ex.title||''}:** ${ex.text||''}`)});
+      lines.push('');
+      lines.push('## Stress');
+      lines.push(`- Physical: ${(s.stress?.physical||[]).map(b=>b?'[x]':'[ ]').join(' ')}`);
+      lines.push(`- Mental: ${(s.stress?.mental||[]).map(b=>b?'[x]':'[ ]').join(' ')}`);
+      lines.push('');
+      lines.push('## Consequences');
+      (s.consequences||[]).forEach(c=>{lines.push(`- ${c.severity}: ${c.text||''}`)});
+      lines.push('');
+      lines.push('---');
+      lines.push(`Schema Version: ${s.schemaVersion||'1.1.0'}`);
+      return lines.join('\n');
+    }
+
+    // --- Dice ---
+    function rollFateDie(){ // returns -1, 0, or +1
+      const r = Math.random();
+      return r<1/3?-1:(r<2/3?0:1);
+    }
+    function rollDice(){
+      const results = [rollFateDie(), rollFateDie(), rollFateDie(), rollFateDie()];
+      const total = results.reduce((a,b)=>a+b,0);
+      const dice = $('#dice'); dice.innerHTML='';
+      for(const v of results){
+        const d = document.createElement('div'); d.className='die';
+        if(v===1){ d.classList.add('plus'); d.textContent='+'; }
+        else if(v===-1){ d.classList.add('minus'); d.textContent='−'; }
+        else { d.textContent='·'; }
+        dice.appendChild(d);
+      }
+
+      // Fate ladder flavor text
+      const ladder = {
+        [-2]: 'Terrible',
+        [-1]: 'Poor',
+        [0]: 'Mediocre',
+        [1]: 'Average',
+        [2]: 'Fair',
+        [3]: 'Good',
+        [4]: 'Great',
+        [5]: 'Superb',
+        [6]: 'Fantastic',
+        [7]: 'Epic',
+        [8]: 'Legendary'
+      };
+      let flavor = ladder[total] || (total < -2 ? 'Abysmal' : 'Beyond Legendary');
+
+      $('#total span').textContent = String(`Result: ${total} — ${flavor}`);
+
+    }
+
+    // --- Helpers ---
+    function escapeHtml(str=''){
+      return String(str).replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]));
+    }
+    function fileToDataURL(file){
+      return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)});
+    }
+
+    // --- Theme toggle ---
+    function toggleTheme(){
+      const cur = document.documentElement.classList.contains('light')?'light':'dark';
+      applyTheme(cur==='light'?'dark':'light');
+    }
+
+    // --- Startup ---
+    (function init(){
+      // Theme
+      applyTheme(localStorage.getItem('fate_theme')||'dark');
+
+      onInputs();
+
+      // Load autosave if present
+      const had = loadLocal();
+      if(!had){
+        // Populate some defaults
+        state.aspects = [''];
+        state.skills = [
+          {name:'Fight', rating:2},
+          {name:'Athletics', rating:2},
+          {name:'Notice', rating:1}
+        ];
+        state.stunts = [{title:'', text:''}];
+        state.extras = [{title:'', text:''}];
+        state.skillLevels = Array.from(new Set([...(state.skillLevels||[]), 2,1])).sort((a,b)=>a-b);
+        renderAll();
+        saveLocal();
+      } else {
+        renderAll();
+        markSaved();
+      }
+
+      // PWA register (requires HTTPS/localhost and a separate sw.js file)
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('sw.js').catch(()=>{/* ignored if not hosted */});
+      }
+
+      // Manifest (works best when hosted); dynamically add default manifest
+      const m = document.createElement('link');
+      m.rel='manifest';
+      m.href='manifest.webmanifest';
+      document.head.appendChild(m);
+
+    })();
+  </script>
+
+  <!-- Notes: For full PWA, place these two tiny files next to this HTML when hosting over HTTPS or localhost. -->
+  <!-- manifest.webmanifest -->
+  <!--
+  {
+    "name": "Fate Core Character Sheet",
+    "short_name": "Fate Sheet",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0b1020",
+    "theme_color": "#2563eb",
+    "icons": [
+      {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+      {"src":"icon-512.png","sizes":"512x512","type":"image/png"}
+    ]
+  }
+  -->
+
+  <!-- sw.js (basic cache-first for this page and CDN lib) -->
+  <!--
+  const CACHE='fate-sheet-v1';
+  const ASSETS=[
+    './',
+    './index.html',
+    'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'
+  ];
+  self.addEventListener('install',e=>{
+    e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));
+  });
+  self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+  self.addEventListener('fetch',e=>{
+    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+  });
+  -->
+
+</body>
+</html>
