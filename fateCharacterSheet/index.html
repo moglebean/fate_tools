@@ -177,7 +177,7 @@
     <header class="no-pdf" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px">
       <div class="brand" style="min-width:0">
 
-        <div class="logo" aria-hidden="true">  <img src="fate.jpg" alt="Red dot" /></div>
+        <div class="logo" aria-hidden="true">  <img src="../common/assets/fate.jpg" alt="Red dot" /></div>
         <div class="title">
           <h1 style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Fate Core Character Sheet</h1>
         </div>
@@ -465,7 +465,7 @@
     // --- Image handling ---
     function renderImage(){
       const img = $('#charImage');
-      const src = state.image || "avatar.png";
+      const src = state.image || "../common/assets/avatar.png";
       img.src = src;
     }
 
@@ -1420,7 +1420,7 @@
     }
     async function fetchSchemaText(){
       if (schemaTextCache !== null) return schemaTextCache;
-      const response = await fetch('fate_character_sheet_schema.json', { cache: 'no-cache' });
+      const response = await fetch('../common/schema/fate_character_sheet_schema.json', { cache: 'no-cache' });
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
       schemaTextCache = await response.text();
       return schemaTextCache;
