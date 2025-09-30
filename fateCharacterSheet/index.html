@@ -445,6 +445,7 @@
     const LEGACY_KEY = 'fate_sheet';
     let characterBundle = { characters: [], currentIndex: 0 };
     let isDirty = false;
+    let schemaTextCache = null;
 
     // --- Utilities ---
     const $ = sel => document.querySelector(sel);
@@ -1417,6 +1418,13 @@
       a.download = filename; a.click();
       setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
     }
+    async function fetchSchemaText(){
+      if (schemaTextCache !== null) return schemaTextCache;
+      const response = await fetch('fate_character_sheet_schema.json', { cache: 'no-cache' });
+      if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`.trim());
+      schemaTextCache = await response.text();
+      return schemaTextCache;
+    }
     async function importJSON(){
       const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
       inp.onchange = async ()=>{
@@ -1450,9 +1458,14 @@
       download(fname, out, 'application/json');
     }
 
-    function downloadSchema(){
-      const schema = document.getElementById('jsonSchema').textContent.trim();
-      download('fate-character.schema.json', schema, 'application/json');
+    async function downloadSchema(){
+      try{
+        const schema = await fetchSchemaText();
+        download('fate_character_sheet_schema.json', schema, 'application/json');
+      }catch(err){
+        console.error('Failed to download schema', err);
+        alert('Unable to fetch schema: '+err.message);
+      }
     }
 
     function exportMarkdown(){
